@@ -1,346 +1,282 @@
 /* ══════════════════════════════════════════════
    OÁSIS VIDRAÇARIA — main.js
-   Funcionalidades: Nav, Reveal, Carrossel,
-   Galeria, Contador, Formulário, Back-to-top
+   Inclui: Nav, Reveal, Carrossel, Galeria,
+   Simulador de Orçamento, Back-to-top
 ══════════════════════════════════════════════ */
 
 'use strict';
 
-/* ── DOMContentLoaded wrapper ── */
 document.addEventListener('DOMContentLoaded', () => {
 
   /* ══════════════════════════════════════
-     1. NAVIGATION — scroll + mobile toggle
+     1. NAVIGATION
   ══════════════════════════════════════ */
-  const nav        = document.getElementById('nav');
-  const navToggle  = document.getElementById('navToggle');
-  const navLinks   = document.getElementById('navLinks');
+  const nav       = document.getElementById('nav');
+  const navToggle = document.getElementById('navToggle');
+  const navLinks  = document.getElementById('navLinks');
 
-  // Overlay para fechar menu ao clicar fora
   const overlay = document.createElement('div');
   overlay.className = 'nav-overlay';
   document.body.appendChild(overlay);
 
-  function openMenu() {
-    navLinks.classList.add('open');
-    navToggle.classList.add('open');
-    overlay.classList.add('open');
-    document.body.style.overflow = 'hidden';
-  }
+  const openMenu  = () => { navLinks.classList.add('open'); navToggle.classList.add('open'); overlay.classList.add('open'); document.body.style.overflow = 'hidden'; };
+  const closeMenu = () => { navLinks.classList.remove('open'); navToggle.classList.remove('open'); overlay.classList.remove('open'); document.body.style.overflow = ''; };
 
-  function closeMenu() {
-    navLinks.classList.remove('open');
-    navToggle.classList.remove('open');
-    overlay.classList.remove('open');
-    document.body.style.overflow = '';
-  }
-
-  navToggle.addEventListener('click', () => {
-    navLinks.classList.contains('open') ? closeMenu() : openMenu();
-  });
-
+  navToggle.addEventListener('click', () => navLinks.classList.contains('open') ? closeMenu() : openMenu());
   overlay.addEventListener('click', closeMenu);
+  navLinks.querySelectorAll('a').forEach(l => l.addEventListener('click', closeMenu));
 
-  // Fechar ao clicar em link
-  navLinks.querySelectorAll('a').forEach(link => {
-    link.addEventListener('click', closeMenu);
-  });
-
-  // Scroll: adiciona classe scrolled + ativa link ativo
-  let lastScroll = 0;
   window.addEventListener('scroll', () => {
-    const y = window.scrollY;
-    nav.classList.toggle('scrolled', y > 60);
-
-    // Back-to-top
-    backTop.classList.toggle('visible', y > 500);
-
-    lastScroll = y;
+    nav.classList.toggle('scrolled', window.scrollY > 60);
+    backTop.classList.toggle('visible', window.scrollY > 500);
   }, { passive: true });
 
+  window.addEventListener('resize', () => { if (window.innerWidth > 780) closeMenu(); });
 
   /* ══════════════════════════════════════
-     2. SMOOTH SCROLL PARA LINKS INTERNOS
+     2. SMOOTH SCROLL
   ══════════════════════════════════════ */
-  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', e => {
-      const target = document.querySelector(anchor.getAttribute('href'));
-      if (!target) return;
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      const t = document.querySelector(a.getAttribute('href'));
+      if (!t) return;
       e.preventDefault();
-      const offset = nav.offsetHeight + 8;
-      const top = target.getBoundingClientRect().top + window.scrollY - offset;
-      window.scrollTo({ top, behavior: 'smooth' });
+      window.scrollTo({ top: t.getBoundingClientRect().top + window.scrollY - nav.offsetHeight - 8, behavior: 'smooth' });
     });
   });
 
+  /* ══════════════════════════════════════
+     3. REVEAL ON SCROLL
+  ══════════════════════════════════════ */
+  const revObs = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('is-visible'); revObs.unobserve(e.target); } });
+  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+  document.querySelectorAll('.reveal').forEach(el => revObs.observe(el));
 
   /* ══════════════════════════════════════
-     3. REVEAL ON SCROLL (IntersectionObserver)
+     4. CARROSSEL
   ══════════════════════════════════════ */
-  const revealElements = document.querySelectorAll('.reveal');
-
-  const revealObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('is-visible');
-        revealObserver.unobserve(entry.target);
-      }
-    });
-  }, {
-    threshold: 0.12,
-    rootMargin: '0px 0px -40px 0px'
-  });
-
-  revealElements.forEach(el => revealObserver.observe(el));
-
-
-  /* ══════════════════════════════════════
-     4. CONTADORES ANIMADOS (Hero stats)
-  ══════════════════════════════════════ */
-  const counters = document.querySelectorAll('[data-count]');
-  let countersStarted = false;
-
-  function animateCounters() {
-    counters.forEach(counter => {
-      const target = parseInt(counter.getAttribute('data-count'), 10);
-      const duration = 1800;
-      const step = target / (duration / 16);
-      let current = 0;
-
-      const tick = () => {
-        current += step;
-        if (current >= target) {
-          counter.textContent = target.toLocaleString('pt-BR');
-          return;
-        }
-        counter.textContent = Math.floor(current).toLocaleString('pt-BR');
-        requestAnimationFrame(tick);
-      };
-      requestAnimationFrame(tick);
-    });
-  }
-
-  const heroSection = document.querySelector('.hero');
-  const counterObserver = new IntersectionObserver((entries) => {
-    if (entries[0].isIntersecting && !countersStarted) {
-      countersStarted = true;
-      setTimeout(animateCounters, 600);
-    }
-  }, { threshold: 0.3 });
-
-  if (heroSection) counterObserver.observe(heroSection);
-
-
-  /* ══════════════════════════════════════
-     5. CARROSSEL DE TRABALHOS
-  ══════════════════════════════════════ */
-  const track        = document.getElementById('carouselTrack');
-  const prevBtn      = document.getElementById('carouselPrev');
-  const nextBtn      = document.getElementById('carouselNext');
-  const dotsContainer = document.getElementById('carouselDots');
+  const track  = document.getElementById('carouselTrack');
+  const prevBtn = document.getElementById('carouselPrev');
+  const nextBtn = document.getElementById('carouselNext');
+  const dotsWrap = document.getElementById('carouselDots');
 
   if (track && prevBtn && nextBtn) {
     const cards = track.querySelectorAll('.carousel__card');
-    const total = cards.length;
-    let currentIndex = 0;
+    let cur = 0;
 
-    // Criar dots
     cards.forEach((_, i) => {
-      const dot = document.createElement('button');
-      dot.className = 'carousel__dot' + (i === 0 ? ' active' : '');
-      dot.setAttribute('aria-label', `Slide ${i + 1}`);
-      dot.addEventListener('click', () => goTo(i));
-      dotsContainer.appendChild(dot);
+      const d = document.createElement('button');
+      d.className = 'carousel__dot' + (i === 0 ? ' active' : '');
+      d.setAttribute('aria-label', `Slide ${i + 1}`);
+      d.addEventListener('click', () => goTo(i));
+      dotsWrap.appendChild(d);
     });
 
-    const dots = dotsContainer.querySelectorAll('.carousel__dot');
+    const dots = dotsWrap.querySelectorAll('.carousel__dot');
+    const gw = () => { const s = window.getComputedStyle(track); return (cards[0]?.offsetWidth || 0) + (parseFloat(s.columnGap || s.gap) || 24); };
 
-    function getCardWidth() {
-      if (!cards[0]) return 0;
-      const style = window.getComputedStyle(track);
-      const gap = parseFloat(style.columnGap || style.gap) || 24;
-      return cards[0].offsetWidth + gap;
-    }
+    const goTo = (i) => {
+      cur = Math.max(0, Math.min(i, cards.length - 1));
+      track.scrollTo({ left: cur * gw(), behavior: 'smooth' });
+      dots.forEach((d, j) => d.classList.toggle('active', j === cur));
+    };
 
-    function goTo(index) {
-      currentIndex = Math.max(0, Math.min(index, total - 1));
-      track.scrollTo({ left: currentIndex * getCardWidth(), behavior: 'smooth' });
-      dots.forEach((d, i) => d.classList.toggle('active', i === currentIndex));
-    }
+    prevBtn.addEventListener('click', () => goTo(cur - 1));
+    nextBtn.addEventListener('click', () => goTo(cur + 1));
 
-    prevBtn.addEventListener('click', () => goTo(currentIndex - 1));
-    nextBtn.addEventListener('click', () => goTo(currentIndex + 1));
-
-    // Sync dots ao arrastar/scrollar
-    let scrollTimer;
+    let st;
     track.addEventListener('scroll', () => {
-      clearTimeout(scrollTimer);
-      scrollTimer = setTimeout(() => {
-        const w = getCardWidth();
-        if (w === 0) return;
-        const idx = Math.round(track.scrollLeft / w);
-        currentIndex = idx;
-        dots.forEach((d, i) => d.classList.toggle('active', i === idx));
-      }, 80);
+      clearTimeout(st);
+      st = setTimeout(() => { const w = gw(); if (w) { cur = Math.round(track.scrollLeft / w); dots.forEach((d, i) => d.classList.toggle('active', i === cur)); } }, 80);
     }, { passive: true });
 
-    // Auto-play
-    let autoPlay = setInterval(() => {
-      const next = (currentIndex + 1) % total;
-      goTo(next);
-    }, 4500);
-
+    let ap = setInterval(() => goTo((cur + 1) % cards.length), 4500);
     [prevBtn, nextBtn, track].forEach(el => {
-      el.addEventListener('mouseenter', () => clearInterval(autoPlay));
-      el.addEventListener('mouseleave', () => {
-        autoPlay = setInterval(() => goTo((currentIndex + 1) % total), 4500);
-      });
+      el.addEventListener('mouseenter', () => clearInterval(ap));
+      el.addEventListener('mouseleave', () => { ap = setInterval(() => goTo((cur + 1) % cards.length), 4500); });
     });
   }
 
-
   /* ══════════════════════════════════════
-     6. FILTRO DA GALERIA
+     5. FILTRO GALERIA
   ══════════════════════════════════════ */
-  const filterBtns   = document.querySelectorAll('.filter-btn');
-  const galeriaItems = document.querySelectorAll('.galeria__item');
-
-  filterBtns.forEach(btn => {
+  document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      // Ativa botão
-      filterBtns.forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-
-      const filter = btn.getAttribute('data-filter');
-
-      galeriaItems.forEach(item => {
-        const cat = item.getAttribute('data-cat');
-        const match = filter === 'all' || cat === filter;
-
-        if (match) {
-          item.classList.remove('hidden');
-          // Reativar reveal se necessário
-          item.style.display = '';
-        } else {
-          item.classList.add('hidden');
-          item.style.display = 'none';
-        }
+      const f = btn.getAttribute('data-filter');
+      document.querySelectorAll('.galeria__item').forEach(item => {
+        const match = f === 'all' || item.getAttribute('data-cat') === f;
+        item.style.display = match ? '' : 'none';
+        item.classList.toggle('hidden', !match);
       });
     });
   });
 
-
   /* ══════════════════════════════════════
-     7. FORMULÁRIO DE CONTATO
+     6. SIMULADOR DE ORÇAMENTO
   ══════════════════════════════════════ */
-  const form        = document.getElementById('contactForm');
-  const formSuccess = document.getElementById('formSuccess');
 
-  if (form) {
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
+  // ── Tabela de preços ──────────────────
+  // Portas: preço fixo por tamanho (largura × altura em m)
+  // Demais: preço por m² conforme tipo de vidro (já nos botões via data-preco)
 
-      // Validação básica
-      const nome = form.querySelector('#nome').value.trim();
-      if (!nome) {
-        shakeField(form.querySelector('#nome'));
+  const PORTAS_FIXAS = [
+    { maxL: 0.80, maxA: 2.10, preco: 380,  label: 'Porta Pequena (até 0,80×2,10m)' },
+    { maxL: 0.90, maxA: 2.20, preco: 480,  label: 'Porta Padrão (até 0,90×2,20m)'  },
+    { maxL: 1.00, maxA: 2.40, preco: 620,  label: 'Porta Média (até 1,00×2,40m)'   },
+    { maxL: 1.20, maxA: 2.40, preco: 820,  label: 'Porta Larga (até 1,20×2,40m)'   },
+    { maxL: 1.50, maxA: 2.70, preco: 1150, label: 'Porta Grande (até 1,50×2,70m)'  },
+    { maxL: 9.99, maxA: 9.99, preco: null, label: 'Porta Especial (orçamento sob consulta)' },
+  ];
+
+  // Multiplicador de instalação por tipo
+  const MULT = { porta: 1.0, janela: 0.95, box: 1.10, basculante: 0.90 };
+
+  const NUM = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+
+  // ── Seleção de opções ────────────────
+  function initOptions(containerId) {
+    const wrap = document.getElementById(containerId);
+    if (!wrap) return;
+    wrap.querySelectorAll('.sim__opt').forEach(btn => {
+      btn.addEventListener('click', () => {
+        wrap.querySelectorAll('.sim__opt').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+  }
+  initOptions('tipoProduto');
+  initOptions('tipoVidro');
+
+  // ── Helpers ──────────────────────────
+  const getActive = (id) => document.querySelector(`#${id} .sim__opt.active`);
+  const fmt = (n) => n.toLocaleString('pt-BR', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+  const capFirst = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+
+  // ── Calcular ─────────────────────────
+  document.getElementById('btnCalcular').addEventListener('click', () => {
+
+    const tipoProdEl = getActive('tipoProduto');
+    const tipoVidEl  = getActive('tipoVidro');
+    const largEl     = document.getElementById('largura');
+    const altEl      = document.getElementById('altura');
+
+    const larg = parseFloat(largEl.value.replace(',', '.'));
+    const alt  = parseFloat(altEl.value.replace(',', '.'));
+
+    // Validação
+    let valid = true;
+    [largEl, altEl].forEach(el => { el.classList.remove('error'); });
+
+    if (!larg || larg <= 0 || larg > 10) { largEl.classList.add('error'); valid = false; }
+    if (!alt  || alt  <= 0 || alt  > 10) { altEl.classList.add('error');  valid = false; }
+    if (!valid) return;
+
+    const produto  = tipoProdEl.getAttribute('data-value');
+    const vidro    = tipoVidEl.getAttribute('data-value');
+    const precoM2  = parseFloat(tipoVidEl.getAttribute('data-preco'));
+    const area     = larg * alt;
+    const mult     = MULT[produto] || 1;
+    const nomeProd = capFirst(produto);
+    const nomeVid  = capFirst(vidro === 'fume' ? 'Fumê' : vidro);
+
+    let valorFinal, formula, precoLabel;
+
+    if (produto === 'porta') {
+      // Lógica de tabela fixa para portas
+      const faixa = PORTAS_FIXAS.find(f => larg <= f.maxL && alt <= f.maxA);
+      if (faixa.preco === null) {
+        // Porta especial → orçamento manual
+        mostrarResultado({ nomeProd, nomeVid, larg, alt, area, precoM2, formula: '—', precoLabel: 'Sob consulta', valorFinal: null });
         return;
       }
-
-      // Simula envio (substituir por fetch/API real)
-      const btn = form.querySelector('button[type="submit"]');
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando...';
-
-      setTimeout(() => {
-        form.style.display = 'none';
-        formSuccess.classList.add('show');
-      }, 1400);
-    });
-  }
-
-  function shakeField(el) {
-    el.style.borderColor = '#e05a5a';
-    el.style.animation = 'none';
-    requestAnimationFrame(() => {
-      el.style.animation = 'shake 0.4s ease';
-    });
-    setTimeout(() => {
-      el.style.borderColor = '';
-      el.style.animation = '';
-    }, 800);
-  }
-
-  // Injetar animação shake no CSS dinamicamente
-  const shakeStyle = document.createElement('style');
-  shakeStyle.textContent = `
-    @keyframes shake {
-      0%,100% { transform: translateX(0); }
-      20%      { transform: translateX(-6px); }
-      40%      { transform: translateX(6px); }
-      60%      { transform: translateX(-4px); }
-      80%      { transform: translateX(4px); }
+      valorFinal = faixa.preco;
+      formula    = `Porta ${larg.toFixed(2)}×${alt.toFixed(2)} m (tabela fixa)`;
+      precoLabel = `R$ ${faixa.preco.toLocaleString('pt-BR')} (fixo por tamanho)`;
+    } else {
+      // m² para janela, box, basculante
+      valorFinal = area * precoM2 * mult;
+      formula    = `${fmt(area)} m² × R$${precoM2}/m²${mult !== 1 ? ` × ${mult}` : ''}`;
+      precoLabel = `R$ ${precoM2}/m²`;
     }
-  `;
-  document.head.appendChild(shakeStyle);
 
+    mostrarResultado({ nomeProd, nomeVid, larg, alt, area, precoM2, formula, precoLabel, valorFinal });
+  });
 
-  /* ══════════════════════════════════════
-     8. MÁSCARA DE TELEFONE
-  ══════════════════════════════════════ */
-  const telInput = document.getElementById('telefone');
-  if (telInput) {
-    telInput.addEventListener('input', (e) => {
-      let v = e.target.value.replace(/\D/g, '').slice(0, 11);
-      if (v.length <= 10) {
-        v = v.replace(/^(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3');
-      } else {
-        v = v.replace(/^(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3');
-      }
-      e.target.value = v;
-    });
+  function mostrarResultado({ nomeProd, nomeVid, larg, alt, area, precoM2, formula, precoLabel, valorFinal }) {
+    document.getElementById('resProduto').textContent = nomeProd;
+    document.getElementById('resVidro').textContent   = nomeVid;
+    document.getElementById('resMedidas').textContent = `${larg.toFixed(2)} × ${alt.toFixed(2)} m`;
+    document.getElementById('resArea').textContent    = `${fmt(area)} m²`;
+    document.getElementById('resPrecoM2').textContent = precoLabel;
+    document.getElementById('resFormula').textContent = formula;
+
+    const totalEl = document.getElementById('resTotal');
+    const wppBtn  = document.getElementById('btnWhatsApp');
+
+    if (valorFinal === null) {
+      totalEl.textContent = 'Sob consulta';
+      totalEl.style.fontSize = '1.2rem';
+    } else {
+      totalEl.textContent = NUM.format(valorFinal);
+      totalEl.style.fontSize = '';
+    }
+
+    // Montar mensagem WhatsApp
+    const msg = [
+      '🪟 *Oásis Vidraçaria — Solicitação de Orçamento*',
+      '',
+      `📦 *Produto:* ${nomeProd}`,
+      `💎 *Tipo de vidro:* ${nomeVid}`,
+      `📐 *Medidas:* ${larg.toFixed(2)} × ${alt.toFixed(2)} m`,
+      `📊 *Área:* ${fmt(area)} m²`,
+      valorFinal !== null ? `💰 *Valor estimado:* ${NUM.format(valorFinal)}` : '💰 *Valor:* Sob consulta (dimensão especial)',
+      '',
+      'Gostaria de confirmar o orçamento e agendar a medição.',
+    ].join('\n');
+
+    wppBtn.href = `https://wa.me/5575998797159?text=${encodeURIComponent(msg)}`;
+
+    const res = document.getElementById('simResultado');
+    res.classList.remove('show');
+    void res.offsetWidth; // reflow para reiniciar animação
+    res.classList.add('show');
+
+    // Scroll suave até o resultado
+    setTimeout(() => res.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
   }
 
+  // Remover erro ao digitar
+  ['largura', 'altura'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', () => el.classList.remove('error'));
+  });
 
   /* ══════════════════════════════════════
-     9. BACK TO TOP
+     7. BACK TO TOP
   ══════════════════════════════════════ */
   const backTop = document.getElementById('backTop');
-  if (backTop) {
-    backTop.addEventListener('click', () => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-  }
-
+  if (backTop) backTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 
   /* ══════════════════════════════════════
-     10. ANO DINÂMICO NO RODAPÉ
+     8. ANO DINÂMICO
   ══════════════════════════════════════ */
   const yearEl = document.getElementById('year');
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-
   /* ══════════════════════════════════════
-     11. PARALLAX SUAVE NO HERO
+     9. PARALLAX SUAVE HERO
   ══════════════════════════════════════ */
   const heroOrbs = document.querySelectorAll('.hero__orb');
   if (heroOrbs.length) {
     window.addEventListener('scroll', () => {
       const y = window.scrollY;
       if (y > window.innerHeight) return;
-      heroOrbs.forEach((orb, i) => {
-        const speed = 0.08 + i * 0.04;
-        orb.style.transform = `translateY(${y * speed}px)`;
-      });
+      heroOrbs.forEach((o, i) => { o.style.transform = `translateY(${y * (0.08 + i * 0.04)}px)`; });
     }, { passive: true });
   }
-
-
-  /* ══════════════════════════════════════
-     12. FECHAR MENU AO REDIMENSIONAR
-  ══════════════════════════════════════ */
-  window.addEventListener('resize', () => {
-    if (window.innerWidth > 780) closeMenu();
-  });
 
 });
