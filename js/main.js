@@ -1,41 +1,32 @@
 /* ══════════════════════════════════════════════
    OÁSIS VIDRAÇARIA — main.js
-   Inclui: Nav, Reveal, Carrossel, Galeria,
-   Simulador de Orçamento, Back-to-top
 ══════════════════════════════════════════════ */
-
 'use strict';
 
 document.addEventListener('DOMContentLoaded', () => {
 
-  /* ══════════════════════════════════════
-     1. NAVIGATION
-  ══════════════════════════════════════ */
-  const nav       = document.getElementById('nav');
-  const navToggle = document.getElementById('navToggle');
-  const navLinks  = document.getElementById('navLinks');
+  /* ── 1. NAVIGATION ── */
+  const nav        = document.getElementById('nav');
+  const navToggle  = document.getElementById('navToggle');
+  const navDrawer  = document.getElementById('navDrawer');
+  const navOverlay = document.getElementById('navOverlay');
+  const backTop    = document.getElementById('backTop');
 
-  const overlay = document.createElement('div');
-  overlay.className = 'nav-overlay';
-  document.body.appendChild(overlay);
+  const openMenu  = () => { navDrawer.classList.add('open'); navToggle.classList.add('open'); navOverlay.classList.add('open'); document.body.style.overflow = 'hidden'; };
+  const closeMenu = () => { navDrawer.classList.remove('open'); navToggle.classList.remove('open'); navOverlay.classList.remove('open'); document.body.style.overflow = ''; };
 
-  const openMenu  = () => { navLinks.classList.add('open'); navToggle.classList.add('open'); overlay.classList.add('open'); document.body.style.overflow = 'hidden'; };
-  const closeMenu = () => { navLinks.classList.remove('open'); navToggle.classList.remove('open'); overlay.classList.remove('open'); document.body.style.overflow = ''; };
+  navToggle.addEventListener('click', () => navDrawer.classList.contains('open') ? closeMenu() : openMenu());
+  navOverlay.addEventListener('click', closeMenu);
+  document.querySelectorAll('.nav__drawer-link, .nav__drawer-whatsapp').forEach(l => l.addEventListener('click', closeMenu));
+  window.addEventListener('resize', () => { if (window.innerWidth > 820) closeMenu(); });
 
-  navToggle.addEventListener('click', () => navLinks.classList.contains('open') ? closeMenu() : openMenu());
-  overlay.addEventListener('click', closeMenu);
-  navLinks.querySelectorAll('a').forEach(l => l.addEventListener('click', closeMenu));
-
+  /* ── 2. SCROLL ── */
   window.addEventListener('scroll', () => {
     nav.classList.toggle('scrolled', window.scrollY > 60);
-    backTop.classList.toggle('visible', window.scrollY > 500);
+    if (backTop) backTop.classList.toggle('visible', window.scrollY > 500);
   }, { passive: true });
 
-  window.addEventListener('resize', () => { if (window.innerWidth > 780) closeMenu(); });
-
-  /* ══════════════════════════════════════
-     2. SMOOTH SCROLL
-  ══════════════════════════════════════ */
+  /* ── 3. SMOOTH SCROLL ── */
   document.querySelectorAll('a[href^="#"]').forEach(a => {
     a.addEventListener('click', e => {
       const t = document.querySelector(a.getAttribute('href'));
@@ -45,21 +36,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  /* ══════════════════════════════════════
-     3. REVEAL ON SCROLL
-  ══════════════════════════════════════ */
+  /* ── 4. REVEAL ── */
   const revObs = new IntersectionObserver((entries) => {
     entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('is-visible'); revObs.unobserve(e.target); } });
-  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
-
+  }, { threshold: 0.1, rootMargin: '0px 0px -30px 0px' });
   document.querySelectorAll('.reveal').forEach(el => revObs.observe(el));
 
-  /* ══════════════════════════════════════
-     4. CARROSSEL
-  ══════════════════════════════════════ */
-  const track  = document.getElementById('carouselTrack');
-  const prevBtn = document.getElementById('carouselPrev');
-  const nextBtn = document.getElementById('carouselNext');
+  /* ── 5. CARROSSEL ── */
+  const track    = document.getElementById('carouselTrack');
+  const prevBtn  = document.getElementById('carouselPrev');
+  const nextBtn  = document.getElementById('carouselNext');
   const dotsWrap = document.getElementById('carouselDots');
 
   if (track && prevBtn && nextBtn) {
@@ -75,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const dots = dotsWrap.querySelectorAll('.carousel__dot');
-    const gw = () => { const s = window.getComputedStyle(track); return (cards[0]?.offsetWidth || 0) + (parseFloat(s.columnGap || s.gap) || 24); };
+    const gw = () => { const s = window.getComputedStyle(track); return (cards[0]?.offsetWidth || 0) + (parseFloat(s.columnGap || s.gap) || 20); };
 
     const goTo = (i) => {
       cur = Math.max(0, Math.min(i, cards.length - 1));
@@ -89,7 +75,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let st;
     track.addEventListener('scroll', () => {
       clearTimeout(st);
-      st = setTimeout(() => { const w = gw(); if (w) { cur = Math.round(track.scrollLeft / w); dots.forEach((d, i) => d.classList.toggle('active', i === cur)); } }, 80);
+      st = setTimeout(() => {
+        const w = gw();
+        if (w) { cur = Math.round(track.scrollLeft / w); dots.forEach((d, i) => d.classList.toggle('active', i === cur)); }
+      }, 80);
     }, { passive: true });
 
     let ap = setInterval(() => goTo((cur + 1) % cards.length), 4500);
@@ -99,9 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  /* ══════════════════════════════════════
-     5. FILTRO GALERIA
-  ══════════════════════════════════════ */
+  /* ── 6. FILTRO GALERIA ── */
   document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -110,36 +97,25 @@ document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('.galeria__item').forEach(item => {
         const match = f === 'all' || item.getAttribute('data-cat') === f;
         item.style.display = match ? '' : 'none';
-        item.classList.toggle('hidden', !match);
       });
     });
   });
 
-  /* ══════════════════════════════════════
-     6. SIMULADOR DE ORÇAMENTO
-  ══════════════════════════════════════ */
-
-  // ── Tabela de preços ──────────────────
-  // Portas: preço fixo por tamanho (largura × altura em m)
-  // Demais: preço por m² conforme tipo de vidro (já nos botões via data-preco)
-
+  /* ── 7. SIMULADOR ── */
   const PORTAS_FIXAS = [
-    { maxL: 0.80, maxA: 2.10, preco: 380,  label: 'Porta Pequena (até 0,80×2,10m)' },
-    { maxL: 0.90, maxA: 2.20, preco: 480,  label: 'Porta Padrão (até 0,90×2,20m)'  },
-    { maxL: 1.00, maxA: 2.40, preco: 620,  label: 'Porta Média (até 1,00×2,40m)'   },
-    { maxL: 1.20, maxA: 2.40, preco: 820,  label: 'Porta Larga (até 1,20×2,40m)'   },
-    { maxL: 1.50, maxA: 2.70, preco: 1150, label: 'Porta Grande (até 1,50×2,70m)'  },
-    { maxL: 9.99, maxA: 9.99, preco: null, label: 'Porta Especial (orçamento sob consulta)' },
+    { maxL: 0.80, maxA: 2.10, preco: 380  },
+    { maxL: 0.90, maxA: 2.20, preco: 480  },
+    { maxL: 1.00, maxA: 2.40, preco: 620  },
+    { maxL: 1.20, maxA: 2.40, preco: 820  },
+    { maxL: 1.50, maxA: 2.70, preco: 1150 },
+    { maxL: 9.99, maxA: 9.99, preco: null },
   ];
-
-  // Multiplicador de instalação por tipo
   const MULT = { porta: 1.0, janela: 0.95, box: 1.10, basculante: 0.90 };
+  const NUM  = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
-  const NUM = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
-
-  // ── Seleção de opções ────────────────
-  function initOptions(containerId) {
-    const wrap = document.getElementById(containerId);
+  // Seleção de opções
+  ['tipoProduto', 'tipoVidro'].forEach(id => {
+    const wrap = document.getElementById(id);
     if (!wrap) return;
     wrap.querySelectorAll('.sim__opt').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -147,37 +123,31 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.classList.add('active');
       });
     });
-  }
-  initOptions('tipoProduto');
-  initOptions('tipoVidro');
+  });
 
-  // ── Helpers ──────────────────────────
-  const getActive = (id) => document.querySelector(`#${id} .sim__opt.active`);
-  const fmt = (n) => n.toLocaleString('pt-BR', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
-  const capFirst = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  const getActive = id => document.querySelector(`#${id} .sim__opt.active`);
+  const fmt4 = n => n.toLocaleString('pt-BR', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+  const capFirst = s => s.charAt(0).toUpperCase() + s.slice(1);
 
-  // ── Calcular ─────────────────────────
   document.getElementById('btnCalcular').addEventListener('click', () => {
+    const largEl = document.getElementById('largura');
+    const altEl  = document.getElementById('altura');
+    const larg   = parseFloat(largEl.value.replace(',', '.'));
+    const alt    = parseFloat(altEl.value.replace(',', '.'));
 
-    const tipoProdEl = getActive('tipoProduto');
-    const tipoVidEl  = getActive('tipoVidro');
-    const largEl     = document.getElementById('largura');
-    const altEl      = document.getElementById('altura');
+    largEl.classList.remove('error');
+    altEl.classList.remove('error');
 
-    const larg = parseFloat(largEl.value.replace(',', '.'));
-    const alt  = parseFloat(altEl.value.replace(',', '.'));
-
-    // Validação
     let valid = true;
-    [largEl, altEl].forEach(el => { el.classList.remove('error'); });
-
     if (!larg || larg <= 0 || larg > 10) { largEl.classList.add('error'); valid = false; }
     if (!alt  || alt  <= 0 || alt  > 10) { altEl.classList.add('error');  valid = false; }
     if (!valid) return;
 
-    const produto  = tipoProdEl.getAttribute('data-value');
-    const vidro    = tipoVidEl.getAttribute('data-value');
-    const precoM2  = parseFloat(tipoVidEl.getAttribute('data-preco'));
+    const prodEl   = getActive('tipoProduto');
+    const vidEl    = getActive('tipoVidro');
+    const produto  = prodEl.getAttribute('data-value');
+    const vidro    = vidEl.getAttribute('data-value');
+    const precoM2  = parseFloat(vidEl.getAttribute('data-preco'));
     const area     = larg * alt;
     const mult     = MULT[produto] || 1;
     const nomeProd = capFirst(produto);
@@ -186,40 +156,35 @@ document.addEventListener('DOMContentLoaded', () => {
     let valorFinal, formula, precoLabel;
 
     if (produto === 'porta') {
-      // Lógica de tabela fixa para portas
       const faixa = PORTAS_FIXAS.find(f => larg <= f.maxL && alt <= f.maxA);
-      if (faixa.preco === null) {
-        // Porta especial → orçamento manual
-        mostrarResultado({ nomeProd, nomeVid, larg, alt, area, precoM2, formula: '—', precoLabel: 'Sob consulta', valorFinal: null });
+      if (!faixa || faixa.preco === null) {
+        exibirResultado({ nomeProd, nomeVid, larg, alt, area, formula: '—', precoLabel: 'Sob consulta', valorFinal: null });
         return;
       }
       valorFinal = faixa.preco;
-      formula    = `Porta ${larg.toFixed(2)}×${alt.toFixed(2)} m (tabela fixa)`;
-      precoLabel = `R$ ${faixa.preco.toLocaleString('pt-BR')} (fixo por tamanho)`;
+      formula    = `Porta ${larg.toFixed(2)} × ${alt.toFixed(2)} m (tabela fixa)`;
+      precoLabel = `${NUM.format(faixa.preco)} (fixo por tamanho)`;
     } else {
-      // m² para janela, box, basculante
       valorFinal = area * precoM2 * mult;
-      formula    = `${fmt(area)} m² × R$${precoM2}/m²${mult !== 1 ? ` × ${mult}` : ''}`;
+      formula    = `${fmt4(area)} m² × R$${precoM2}/m²${mult !== 1 ? ` × ${mult}` : ''}`;
       precoLabel = `R$ ${precoM2}/m²`;
     }
 
-    mostrarResultado({ nomeProd, nomeVid, larg, alt, area, precoM2, formula, precoLabel, valorFinal });
+    exibirResultado({ nomeProd, nomeVid, larg, alt, area, formula, precoLabel, valorFinal });
   });
 
-  function mostrarResultado({ nomeProd, nomeVid, larg, alt, area, precoM2, formula, precoLabel, valorFinal }) {
-    document.getElementById('resProduto').textContent = nomeProd;
-    document.getElementById('resVidro').textContent   = nomeVid;
-    document.getElementById('resMedidas').textContent = `${larg.toFixed(2)} × ${alt.toFixed(2)} m`;
-    document.getElementById('resArea').textContent    = `${fmt(area)} m²`;
-    document.getElementById('resPrecoM2').textContent = precoLabel;
-    document.getElementById('resFormula').textContent = formula;
+  function exibirResultado({ nomeProd, nomeVid, larg, alt, area, formula, precoLabel, valorFinal }) {
+    document.getElementById('resProduto').textContent  = nomeProd;
+    document.getElementById('resVidro').textContent    = nomeVid;
+    document.getElementById('resMedidas').textContent  = `${larg.toFixed(2)} × ${alt.toFixed(2)} m`;
+    document.getElementById('resArea').textContent     = `${fmt4(area)} m²`;
+    document.getElementById('resPrecoM2').textContent  = precoLabel;
+    document.getElementById('resFormula').textContent  = formula;
 
     const totalEl = document.getElementById('resTotal');
-    const wppBtn  = document.getElementById('btnWhatsApp');
-
     if (valorFinal === null) {
       totalEl.textContent = 'Sob consulta';
-      totalEl.style.fontSize = '1.2rem';
+      totalEl.style.fontSize = '1.1rem';
     } else {
       totalEl.textContent = NUM.format(valorFinal);
       totalEl.style.fontSize = '';
@@ -232,50 +197,43 @@ document.addEventListener('DOMContentLoaded', () => {
       `📦 *Produto:* ${nomeProd}`,
       `💎 *Tipo de vidro:* ${nomeVid}`,
       `📐 *Medidas:* ${larg.toFixed(2)} × ${alt.toFixed(2)} m`,
-      `📊 *Área:* ${fmt(area)} m²`,
-      valorFinal !== null ? `💰 *Valor estimado:* ${NUM.format(valorFinal)}` : '💰 *Valor:* Sob consulta (dimensão especial)',
+      `📊 *Área:* ${fmt4(area)} m²`,
+      valorFinal !== null
+        ? `💰 *Valor estimado:* ${NUM.format(valorFinal)}`
+        : '💰 *Valor:* Sob consulta (dimensão especial)',
       '',
       'Gostaria de confirmar o orçamento e agendar a medição.',
     ].join('\n');
 
-    wppBtn.href = `https://wa.me/5575998797159?text=${encodeURIComponent(msg)}`;
+    document.getElementById('btnWhatsApp').href =
+      `https://wa.me/5575998797159?text=${encodeURIComponent(msg)}`;
 
     const res = document.getElementById('simResultado');
     res.classList.remove('show');
-    void res.offsetWidth; // reflow para reiniciar animação
+    void res.offsetWidth;
     res.classList.add('show');
-
-    // Scroll suave até o resultado
-    setTimeout(() => res.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+    setTimeout(() => res.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 120);
   }
 
-  // Remover erro ao digitar
   ['largura', 'altura'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('input', () => el.classList.remove('error'));
   });
 
-  /* ══════════════════════════════════════
-     7. BACK TO TOP
-  ══════════════════════════════════════ */
-  const backTop = document.getElementById('backTop');
+  /* ── 8. BACK TO TOP ── */
   if (backTop) backTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 
-  /* ══════════════════════════════════════
-     8. ANO DINÂMICO
-  ══════════════════════════════════════ */
+  /* ── 9. ANO DINÂMICO ── */
   const yearEl = document.getElementById('year');
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-  /* ══════════════════════════════════════
-     9. PARALLAX SUAVE HERO
-  ══════════════════════════════════════ */
+  /* ── 10. PARALLAX HERO ── */
   const heroOrbs = document.querySelectorAll('.hero__orb');
   if (heroOrbs.length) {
     window.addEventListener('scroll', () => {
       const y = window.scrollY;
       if (y > window.innerHeight) return;
-      heroOrbs.forEach((o, i) => { o.style.transform = `translateY(${y * (0.08 + i * 0.04)}px)`; });
+      heroOrbs.forEach((o, i) => { o.style.transform = `translateY(${y * (0.07 + i * 0.03)}px)`; });
     }, { passive: true });
   }
 
